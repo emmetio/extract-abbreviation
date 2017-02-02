@@ -1,0 +1,26 @@
+{
+  "name": "@emmetio/extract-abbreviation",
+  "version": "0.0.1",
+  "description": "Extracts Emmet abbreviation from string",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emmetio/extract-abbreviation.git"
+  },
+  "keywords": [],
+  "author": "Sergey Chikuyonok <serge.che@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/emmetio/extract-abbreviation/issues"
+  },
+  "homepage": "https://github.com/emmetio/extract-abbreviation#readme",
+  "devDependencies": {
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.22.0",
+    "babel-register": "^6.22.0",
+    "mocha": "^3.2.0",
+    "rollup": "^0.41.4"
+  }
+}
