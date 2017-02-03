@@ -1,21 +1,22 @@
 'use strict';
 
+import StreamReader from './lib/stream-reader';
+import isAtHTMLTag from './lib/is-html';
+import { isQuote } from './lib/quotes';
+
 const code = ch => ch.charCodeAt(0);
 const SQUARE_BRACE_L = code('[');
 const SQUARE_BRACE_R = code(']');
-const ROUND_BRACE_L = code('(');
-const ROUND_BRACE_R = code(')');
-const CURLY_BRACE_L = code('{');
-const CURLY_BRACE_R = code('}');
-const SINGLE_QUOTE = code("'");
-const DOUBLE_QUOTE = code('"');
-const ANGLE_RIGHT = code('>');
+const ROUND_BRACE_L  = code('(');
+const ROUND_BRACE_R  = code(')');
+const CURLY_BRACE_L  = code('{');
+const CURLY_BRACE_R  = code('}');
 
-const specialChars = new Set('#.*:$-_!@%^+'.split('').map(code));
+const specialChars = new Set('#.*:$-_!@%^+>'.split('').map(code));
 const bracePairs = new Map()
 .set(SQUARE_BRACE_L, SQUARE_BRACE_R)
-.set(ROUND_BRACE_L, ROUND_BRACE_R)
-.set(CURLY_BRACE_L, CURLY_BRACE_R);
+.set(ROUND_BRACE_L,  ROUND_BRACE_R)
+.set(CURLY_BRACE_L,  CURLY_BRACE_R);
 
 /**
  * Extracts Emmet abbreviation from given string.
@@ -33,7 +34,7 @@ const bracePairs = new Map()
  * @return {Object} Object with `abbreviation` and its `location` in given line
  * if abbreviation can be extracted, `null` otherwise
  */
-export default function(line, pos, lookAhead) {
+export default function extractAbbreviation(line, pos, lookAhead) {
 	// make sure `pos` is within line range
 	pos = Math.min(line.length, Math.max(0, pos == null ? line.length : pos));
 
@@ -42,14 +43,14 @@ export default function(line, pos, lookAhead) {
 	}
 
 	let c;
-	const state = {pos, line, end: pos};
+	const stream = new StreamReader(line);
 	const stack = [];
 
-	while (state.pos) {
-		c = line.charCodeAt(state.pos - 1);
+	while (!stream.sol()) {
+		c = stream.peek();
 
 		if (isCloseBrace(c)) {
-			stack.push(c)
+			stack.push(c);
 		} else if (isOpenBrace(c)) {
 			if (stack.pop() !== bracePairs.get(c)) {
 				// unexpected brace
@@ -57,21 +58,22 @@ export default function(line, pos, lookAhead) {
 			}
 		} else if (has(stack, SQUARE_BRACE_R) || has(stack, CURLY_BRACE_R)) {
 			// respect all characters inside attribute sets or text nodes
+			stream.pos--;
 			continue;
-		} else if (c === ANGLE_RIGHT ? isHTMLTag(state) : !isAbbreviation(c)) {
+		} else if (isAtHTMLTag(stream) || !isAbbreviation(c)) {
 			break;
 		}
 
-		state.pos--;
+		stream.pos--;
 	}
 
-	if (!stack.length && state.pos !== state.end) {
+	if (!stack.length && stream.pos !== pos) {
 		// found something, remove some invalid symbols from the
 		// beginning and return abbreviation
-		const abbreviation = line.slice(state.pos, state.end).replace(/^[\*\+\>\^]+/, '');
+		const abbreviation = line.slice(stream.pos, pos).replace(/^[\*\+\>\^]+/, '');
 		return {
 			abbreviation,
-			location: state.end - abbreviation.length
+			location: pos - abbreviation.length
 		};
 	}
 }
@@ -95,10 +97,6 @@ function offsetPastAutoClosed(line, pos) {
 	}
 
 	return pos;
-}
-
-function last(arr) {
-	return arr[arr.length - 1];
 }
 
 function has(arr, value) {
