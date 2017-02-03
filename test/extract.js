@@ -33,6 +33,7 @@ describe('Extract abbreviation', () => {
 	it('abbreviation with attributes', () => {
 		assert.deepEqual(extract('a foo[bar|]'), result('foo[bar]', 2));
 		assert.deepEqual(extract('a foo[bar="baz" a b]'), result('foo[bar="baz" a b]', 2));
+		assert.deepEqual(extract('foo bar[a|] baz'), result('bar[a]', 4));
 	});
 
 	it('tag test', () => {

@@ -44,6 +44,7 @@ export default function extractAbbreviation(line, pos, lookAhead) {
 
 	let c;
 	const stream = new StreamReader(line);
+	stream.pos = pos;
 	const stack = [];
 
 	while (!stream.sol()) {
