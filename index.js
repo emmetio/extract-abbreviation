@@ -12,7 +12,7 @@ const ROUND_BRACE_R  = code(')');
 const CURLY_BRACE_L  = code('{');
 const CURLY_BRACE_R  = code('}');
 
-const specialChars = new Set('#.*:$-_!@%^+>'.split('').map(code));
+const specialChars = new Set('#.*:$-_!@%^+>/'.split('').map(code));
 const bracePairs = new Map()
 .set(SQUARE_BRACE_L, SQUARE_BRACE_R)
 .set(ROUND_BRACE_L,  ROUND_BRACE_R)

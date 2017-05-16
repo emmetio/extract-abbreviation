@@ -21,6 +21,8 @@ describe('Extract abbreviation', () => {
 	it('basic', () => {
 		assert.deepEqual(extract('.bar'), result('.bar', 0));
 		assert.deepEqual(extract('.foo .bar'), result('.bar', 5));
+		assert.deepEqual(extract('.foo @bar'), result('@bar', 5));
+		assert.deepEqual(extract('.foo img/'), result('img/', 5));
 		assert.deepEqual(extract('текстdiv'), result('div', 5));
 		assert.deepEqual(extract('foo div[foo="текст" bar=текст2]'), result('div[foo="текст" bar=текст2]', 4));
 	});
