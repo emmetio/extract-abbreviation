@@ -22,6 +22,7 @@ describe('HTML test', () => {
 		assert(test('<div a="b" c=d>'));
 		assert(test('<div title=привет>'));
 		assert(test('<div title=привет123>'));
+		assert(test('<foo-bar>'));
 	});
 
 	it('invalid tags', () => {
