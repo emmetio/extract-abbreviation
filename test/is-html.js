@@ -36,6 +36,5 @@ describe('HTML test', () => {
 		assert(!test('<div foo=>'));
 		assert(!test('[a=b c=d]>'));
 		assert(!test('div[a=b c=d]>'));
-		assert(!test('diva=b asd=as asd>'));
 	});
 });
