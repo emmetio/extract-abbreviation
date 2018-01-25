@@ -20,16 +20,21 @@ describe('HTML test', () => {
 		assert(test('<div foo=bar>'));
 		assert(test('<div foo>'));
 		assert(test('<div a="b" c=d>'));
+		assert(test('<div a=b c=d>'));
+		assert(test('<div a=^b$ c=d>'));
+		assert(test('<div a=b c=^%d]$>'));
 		assert(test('<div title=привет>'));
 		assert(test('<div title=привет123>'));
 		assert(test('<foo-bar>'));
 	});
-
+	
 	it('invalid tags', () => {
 		assert(!test('div>'));
 		assert(!test('<div'));
 		assert(!test('<div привет>'));
 		assert(!test('<div =bar>'));
 		assert(!test('<div foo=>'));
+		assert(!test('[a=b c=d]>'));
+		assert(!test('div[a=b c=d]>'));
 	});
 });
