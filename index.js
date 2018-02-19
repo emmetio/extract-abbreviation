@@ -14,9 +14,9 @@ const CURLY_BRACE_R  = code('}');
 
 const specialChars = new Set('#.*:$-_!@%^+>/'.split('').map(code));
 const bracePairs = new Map()
-.set(SQUARE_BRACE_L, SQUARE_BRACE_R)
-.set(ROUND_BRACE_L,  ROUND_BRACE_R)
-.set(CURLY_BRACE_L,  CURLY_BRACE_R);
+	.set(SQUARE_BRACE_L, SQUARE_BRACE_R)
+	.set(ROUND_BRACE_L,  ROUND_BRACE_R)
+	.set(CURLY_BRACE_L,  CURLY_BRACE_R);
 
 /**
  * Extracts Emmet abbreviation from given string.
@@ -25,21 +25,34 @@ const bracePairs = new Map()
  * `|` is a current caret position.
  * @param {String}  line A text line where abbreviation should be expanded
  * @param {Number}  [pos] Caret position in line. If not given, uses end-of-line
- * @param {Boolean} [lookAhead] Allow parser to look ahead of `pos` index for
+ * @param {Object}  [options]
+ * @param {Boolean} [options.lookAhead] Allow parser to look ahead of `pos` index for
  * searching of missing abbreviation parts. Most editors automatically inserts
  * closing braces for `[`, `{` and `(`, which will most likely be right after
  * current caret position. So in order to properly expand abbreviation, user
  * must explicitly move caret right after auto-inserted braces. Whith this option
  * enabled, parser will search for closing braces right after `pos`. Default is `true`
+ * @param {String} [options.syntax] Name of context syntax of expanded abbreviation.
+ * Either 'markup' (default) or 'stylesheet'. In 'stylesheet' syntax, braces `[]`
+ * and `{}` are not supported thus not extracted.
  * @return {Object} Object with `abbreviation` and its `location` in given line
  * if abbreviation can be extracted, `null` otherwise
  */
-export default function extractAbbreviation(line, pos, lookAhead) {
+export default function extractAbbreviation(line, pos, options) {
 	// make sure `pos` is within line range
 	pos = Math.min(line.length, Math.max(0, pos == null ? line.length : pos));
 
-	if (lookAhead == null || lookAhead === true) {
-		pos = offsetPastAutoClosed(line, pos);
+	if (typeof options === 'boolean') {
+		options = { lookAhead: options };
+	} else {
+		options = Object.assign({
+			syntax: 'markup',
+			lookAhead: null
+		}, options);
+	}
+
+	if (options.lookAhead == null || options.lookAhead === true) {
+		pos = offsetPastAutoClosed(line, pos, options);
 	}
 
 	let c;
@@ -50,9 +63,9 @@ export default function extractAbbreviation(line, pos, lookAhead) {
 	while (!stream.sol()) {
 		c = stream.peek();
 
-		if (isCloseBrace(c)) {
+		if (isCloseBrace(c, options.syntax)) {
 			stack.push(c);
-		} else if (isOpenBrace(c)) {
+		} else if (isOpenBrace(c, options.syntax)) {
 			if (stack.pop() !== bracePairs.get(c)) {
 				// unexpected brace
 				break;
@@ -71,7 +84,7 @@ export default function extractAbbreviation(line, pos, lookAhead) {
 	if (!stack.length && stream.pos !== pos) {
 		// found something, remove some invalid symbols from the
 		// beginning and return abbreviation
-		const abbreviation = line.slice(stream.pos, pos).replace(/^[\*\+\>\^]+/, '');
+		const abbreviation = line.slice(stream.pos, pos).replace(/^[*+>^]+/, '');
 		return {
 			abbreviation,
 			location: pos - abbreviation.length
@@ -86,14 +99,14 @@ export default function extractAbbreviation(line, pos, lookAhead) {
  * @param {Number} pos
  * @return {Number}
  */
-function offsetPastAutoClosed(line, pos) {
+function offsetPastAutoClosed(line, pos, options) {
 	// closing quote is allowed only as a next character
 	if (isQuote(line.charCodeAt(pos))) {
 		pos++;
 	}
 
 	// offset pointer until non-autoclosed character is found
-	while (isCloseBrace(line.charCodeAt(pos))) {
+	while (isCloseBrace(line.charCodeAt(pos), options.syntax)) {
 		pos++;
 	}
 
@@ -111,10 +124,10 @@ function isAbbreviation(c) {
 		|| specialChars.has(c); // special character
 }
 
-function isOpenBrace(c) {
-	return c === SQUARE_BRACE_L || c === ROUND_BRACE_L || c === CURLY_BRACE_L;
+function isOpenBrace(c, syntax) {
+	return c === ROUND_BRACE_L || (syntax === 'markup' && (c === SQUARE_BRACE_L || c === CURLY_BRACE_L));
 }
 
-function isCloseBrace(c) {
-	return c === SQUARE_BRACE_R || c === ROUND_BRACE_R || c === CURLY_BRACE_R;
+function isCloseBrace(c, syntax) {
+	return c === ROUND_BRACE_R || (syntax === 'markup' && (c === SQUARE_BRACE_R || c === CURLY_BRACE_R));
 }

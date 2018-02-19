@@ -5,7 +5,7 @@ require('babel-register');
 const _extract = require('../index').default;
 
 describe('Extract abbreviation', () => {
-	const extract = abbr => {
+	const extract = (abbr, options) => {
 		let caretPos = abbr.indexOf('|');
 		if (caretPos !== -1) {
 			abbr = abbr.slice(0, caretPos) + abbr.slice(caretPos + 1);
@@ -13,8 +13,8 @@ describe('Extract abbreviation', () => {
 			caretPos = null;
 		}
 
-		return _extract(abbr, caretPos);
-	}
+		return _extract(abbr, caretPos, options);
+	};
 
 	const result = (abbreviation, location) => ({abbreviation, location});
 
@@ -42,5 +42,10 @@ describe('Extract abbreviation', () => {
 		assert.deepEqual(extract('<foo>bar[a b="c"]>baz'), result('bar[a b="c"]>baz', 5));
 		assert.deepEqual(extract('foo>bar'), result('foo>bar', 0));
 		assert.deepEqual(extract('<foo>bar'), result('bar', 5));
+	});
+
+	it('stylesheet abbreviation', () => {
+		assert.deepEqual(extract('foo{bar|}'), result('foo{bar}', 0));
+		assert.deepEqual(extract('foo{bar|}', { syntax: 'stylesheet' }), result('bar', 4));
 	});
 });
