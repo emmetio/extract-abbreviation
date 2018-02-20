@@ -18,6 +18,11 @@ const bracePairs = new Map()
 	.set(ROUND_BRACE_L,  ROUND_BRACE_R)
 	.set(CURLY_BRACE_L,  CURLY_BRACE_R);
 
+const defaultOptions = {
+	syntax: 'markup',
+	lookAhead: null
+}
+
 /**
  * Extracts Emmet abbreviation from given string.
  * The goal of this module is to extract abbreviation from current editor’s line,
@@ -43,12 +48,9 @@ export default function extractAbbreviation(line, pos, options) {
 	pos = Math.min(line.length, Math.max(0, pos == null ? line.length : pos));
 
 	if (typeof options === 'boolean') {
-		options = { lookAhead: options };
+		options = Object.assign(defaultOptions, { lookAhead: options });
 	} else {
-		options = Object.assign({
-			syntax: 'markup',
-			lookAhead: null
-		}, options);
+		options = Object.assign(defaultOptions, options);
 	}
 
 	if (options.lookAhead == null || options.lookAhead === true) {
