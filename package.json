@@ -1,6 +1,6 @@
 {
   "name": "@emmetio/extract-abbreviation",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Extracts Emmet abbreviation from string",
   "main": "dist/extract-abbreviation.cjs.js",
   "module": "dist/extract-abbreviation.es.js",
