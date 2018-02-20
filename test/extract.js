@@ -42,6 +42,7 @@ describe('Extract abbreviation', () => {
 		assert.deepEqual(extract('<foo>bar[a b="c"]>baz'), result('bar[a b="c"]>baz', 5));
 		assert.deepEqual(extract('foo>bar'), result('foo>bar', 0));
 		assert.deepEqual(extract('<foo>bar'), result('bar', 5));
+		assert.deepEqual(extract('<foo>bar[a="d" b="c"]>baz', true), result('bar[a="d" b="c"]>baz', 5));
 	});
 
 	it('stylesheet abbreviation', () => {
