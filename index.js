@@ -20,8 +20,9 @@ const bracePairs = new Map()
 
 const defaultOptions = {
 	syntax: 'markup',
-	lookAhead: null
-}
+	lookAhead: null,
+	prefix: ''
+};
 
 /**
  * Extracts Emmet abbreviation from given string.
@@ -35,11 +36,14 @@ const defaultOptions = {
  * searching of missing abbreviation parts. Most editors automatically inserts
  * closing braces for `[`, `{` and `(`, which will most likely be right after
  * current caret position. So in order to properly expand abbreviation, user
- * must explicitly move caret right after auto-inserted braces. Whith this option
+ * must explicitly move caret right after auto-inserted braces. With this option
  * enabled, parser will search for closing braces right after `pos`. Default is `true`
  * @param {String} [options.syntax] Name of context syntax of expanded abbreviation.
  * Either 'markup' (default) or 'stylesheet'. In 'stylesheet' syntax, braces `[]`
  * and `{}` are not supported thus not extracted.
+ * @param {String} [options.prefix] A string that should precede abbreviation in
+ * order to make it successfully extracted. If given, the abbreviation will be
+ * extracted from the nearest `prefix` occurrence.
  * @return {Object} Object with `abbreviation` and its `location` in given line
  * if abbreviation can be extracted, `null` otherwise
  */
@@ -48,9 +52,9 @@ export default function extractAbbreviation(line, pos, options) {
 	pos = Math.min(line.length, Math.max(0, pos == null ? line.length : pos));
 
 	if (typeof options === 'boolean') {
-		options = Object.assign(defaultOptions, { lookAhead: options });
+		options = Object.assign({}, defaultOptions, { lookAhead: options });
 	} else {
-		options = Object.assign(defaultOptions, options);
+		options = Object.assign({}, defaultOptions, options);
 	}
 
 	if (options.lookAhead == null || options.lookAhead === true) {
@@ -58,7 +62,12 @@ export default function extractAbbreviation(line, pos, options) {
 	}
 
 	let c;
-	const stream = new StreamReader(line);
+	const start = getStartOffset(line, pos, options.prefix);
+	if (start === -1) {
+		return null;
+	}
+
+	const stream = new StreamReader(line, start);
 	stream.pos = pos;
 	const stack = [];
 
@@ -89,14 +98,18 @@ export default function extractAbbreviation(line, pos, options) {
 		const abbreviation = line.slice(stream.pos, pos).replace(/^[*+>^]+/, '');
 		return {
 			abbreviation,
-			location: pos - abbreviation.length
+			location: pos - abbreviation.length,
+			start: options.prefix
+				? start - options.prefix.length
+				: pos - abbreviation.length,
+			end: pos
 		};
 	}
 }
 
 /**
  * Returns new `line` index which is right after characters beyound `pos` that
- * edditor will likely automatically close, e.g. }, ], and quotes
+ * editor will likely automatically close, e.g. }, ], and quotes
  * @param {String} line
  * @param {Number} pos
  * @return {Number}
@@ -113,6 +126,87 @@ function offsetPastAutoClosed(line, pos, options) {
 	}
 
 	return pos;
+}
+
+/**
+ * Returns start offset (left limit) in `line` where we should stop looking for
+ * abbreviation: it’s nearest to `pos` location of `prefix` token
+ * @param {String} line
+ * @param {Number} pos
+ * @param {String} prefix
+ * @return {Number}
+ */
+function getStartOffset(line, pos, prefix) {
+	if (!prefix) {
+		return 0;
+	}
+
+	const stream = new StreamReader(line);
+	const compiledPrefix = String(prefix).split('').map(code);
+	stream.pos = pos;
+	let result;
+
+	while (!stream.sol()) {
+		if (consumePair(stream, SQUARE_BRACE_R, SQUARE_BRACE_L) || consumePair(stream, CURLY_BRACE_R, CURLY_BRACE_L)) {
+			continue;
+		}
+
+		result = stream.pos;
+		if (consumeArray(stream, compiledPrefix)) {
+			return result;
+		}
+
+		stream.pos--;
+	}
+
+	return -1;
+}
+
+/**
+ * Consumes full character pair, if possible
+ * @param {StreamReader} stream
+ * @param {Number} close
+ * @param {Number} open
+ * @return {Boolean}
+ */
+function consumePair(stream, close, open) {
+	const start = stream.pos;
+	if (stream.eat(close)) {
+		while (!stream.sol()) {
+			if (stream.eat(open)) {
+				return true;
+			}
+
+			stream.pos--;
+		}
+	}
+
+	stream.pos = start;
+	return false;
+}
+
+/**
+ * Consumes all character codes from given array, right-to-left, if possible
+ * @param {StreamReader} stream
+ * @param {Number[]} arr
+ */
+function consumeArray(stream, arr) {
+	const start = stream.pos;
+	let consumed = false;
+
+	for (let i = arr.length - 1; i >= 0 && !stream.sol(); i--) {
+		if (!stream.eat(arr[i])) {
+			break;
+		}
+
+		consumed = i === 0;
+	}
+
+	if (!consumed) {
+		stream.pos = start;
+	}
+
+	return consumed;
 }
 
 function has(arr, value) {

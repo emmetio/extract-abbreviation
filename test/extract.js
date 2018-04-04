@@ -16,7 +16,12 @@ describe('Extract abbreviation', () => {
 		return _extract(abbr, caretPos, options);
 	};
 
-	const result = (abbreviation, location) => ({abbreviation, location});
+	const result = (abbreviation, location, start) => ({
+		abbreviation,
+		location,
+		start: start != null ? start : location,
+		end: location + abbreviation.length
+	});
 
 	it('basic', () => {
 		assert.deepEqual(extract('.bar'), result('.bar', 0));
@@ -48,5 +53,18 @@ describe('Extract abbreviation', () => {
 	it('stylesheet abbreviation', () => {
 		assert.deepEqual(extract('foo{bar|}'), result('foo{bar}', 0));
 		assert.deepEqual(extract('foo{bar|}', { syntax: 'stylesheet' }), result('bar', 4));
+	});
+
+	it('prefixed extract', () => {
+		assert.deepEqual(extract('<foo>bar[a b="c"]>baz'), result('bar[a b="c"]>baz', 5));
+		assert.deepEqual(extract('<foo>bar[a b="c"]>baz', { prefix: '<' }), result('foo>bar[a b="c"]>baz', 1, 0));
+		assert.deepEqual(extract('<foo>bar[a b="<"]>baz', { prefix: '<' }), result('foo>bar[a b="<"]>baz', 1, 0));
+		assert.deepEqual(extract('<foo>bar{<}>baz', { prefix: '<' }), result('foo>bar{<}>baz', 1, 0));
+
+		// Multiple prefix characters
+		assert.deepEqual(extract('foo>>>bar[a b="c"]>baz', { prefix: '>>>' }), result('bar[a b="c"]>baz', 6, 3));
+
+		// Absent prefix
+		assert.strictEqual(extract('<foo>bar[a b="c"]>baz', { prefix: '&&' }), null);
 	});
 });
