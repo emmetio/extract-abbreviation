@@ -67,4 +67,10 @@ describe('Extract abbreviation', () => {
 		// Absent prefix
 		assert.strictEqual(extract('<foo>bar[a b="c"]>baz', { prefix: '&&' }), null);
 	});
+
+	it('brackets inside curly braces', () => {
+		assert.deepEqual(extract('foo div{[}+a{}'), result('div{[}+a{}', 4));
+		assert.deepEqual(extract('div{}}'), undefined);
+		assert.deepEqual(extract('div{{}'), result('{}', 4));
+	})
 });

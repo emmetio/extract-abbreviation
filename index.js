@@ -74,6 +74,19 @@ export default function extractAbbreviation(line, pos, options) {
 	while (!stream.sol()) {
 		c = stream.peek();
 
+		if (has(stack, CURLY_BRACE_R)) {
+			if (c === CURLY_BRACE_R) {
+				stack.push(c);
+				stream.pos--;
+				continue;
+			}
+
+			if (c !== CURLY_BRACE_L) {
+				stream.pos--;
+				continue;
+			}
+		}
+
 		if (isCloseBrace(c, options.syntax)) {
 			stack.push(c);
 		} else if (isOpenBrace(c, options.syntax)) {
